@@ -14,7 +14,7 @@ type Env struct {
 func getEnv() *Env {
 	redisAddr := os.Getenv("APP_REDIS_ADDR")
 	if redisAddr == "" {
-		redisAddr = "localhost:6379"
+		redisAddr = "192.168.174.134:6379"
 	}
 	redisPwd := os.Getenv("APP_REDIS_PASSWORD")
 	if redisPwd == "" {

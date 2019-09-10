@@ -52,13 +52,13 @@ func (a *App) initializeRoutes() {
 	// a.Router.HandleFunc("/api/info", a.getShortLinkInfo).Methods("GET")
 	// TODO:NOTICE 重定向接口
 	//  指定短连接是 1-11位 的字母和数字组成
-	// a.Router.HandleFunc("/{shortLink:[a-zA-z0-9]{1,11}", a.redirect).Methods("GET")
+	// a.Router.HandleFunc("/{shortLink:[a-zA-z0-9]{1,11}}", a.redirect).Methods("GET")
 
 	// middleware 中间件
 	m := alice.New(a.Middleware.LoggingHandler, a.Middleware.RecoverHandler)
 	a.Router.Handle("/api/shorten", m.ThenFunc(a.createShortLink)).Methods("POST")
 	a.Router.Handle("/api/info", m.ThenFunc(a.getShortLinkInfo)).Methods("GET")
-	a.Router.Handle("/{shortLink:[a-zA-z0-9]{1,11}", m.ThenFunc(a.redirect)).Methods("GET")
+	a.Router.Handle("/{shortLink:[a-zA-z0-9]{1,11}}", m.ThenFunc(a.redirect)).Methods("GET")
 }
 
 // 长地址 --生成--> 短地址
@@ -102,8 +102,7 @@ func (a *App) getShortLinkInfo(w http.ResponseWriter, r *http.Request) {
 func (a *App) redirect(w http.ResponseWriter, r *http.Request) {
 	// 重定向函数的 shortlink 是从变量中获取
 	vars := mux.Vars(r)
-
-	url, err := a.Config.S.UnShorten(vars["shortlink"])
+	url, err := a.Config.S.UnShorten(vars["shortLink"])
 	if err != nil {
 		responseWithError(w, err, nil)
 	} else {
