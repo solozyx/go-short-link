@@ -62,10 +62,10 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	h, _ := hashids.NewWithData(hd)
 	urlHash, _ := h.Encode([]int{45, 434, 1313, 99})
 
-	// 从redis缓存获取长地址哈希值
+	// 从redis缓存获取长地址哈希值  db_shortlink:urlhash:长地址哈希值:url --> 短地址
 	d, err := r.Cli.Get(fmt.Sprintf(Db+UrlHashKey, urlHash)).Result()
 	if err == redis.Nil {
-		// no exist , nothing to do
+		// no exist , nothing to do , 长地址-->生成-->短地址
 	} else if err != nil {
 		return "", err
 	} else {
@@ -79,7 +79,7 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	}
 
 	// 长地址 第1次 转换为 短地址
-	// 全局自增ID + 1
+	// 全局自增ID + 1 db_shortlink:next.url.id
 	err = r.Cli.Incr(Db + UrlIdKey).Err()
 	if err != nil {
 		return "", err
@@ -92,13 +92,13 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 	// 从redis取出的全局自增ID是整型值,把它编码为 既包含整型 又包含大小写字母 的短地址
 	shortLink := base62.EncodeInt64(id)
 
-	// 映射: 短地址 和 长地址 做映射
+	// 映射: 短地址 和 长地址 做映射        db_shortlink:shortlink:短地址:url --> 长地址
 	err = r.Cli.Set(fmt.Sprintf(Db+ShortLinkKey, shortLink), url, time.Minute*time.Duration(exp)).Err()
 	if err != nil {
 		return "", err
 	}
 
-	// 映射: 长地址哈希值 和 短地址 做映射
+	// 映射: 长地址哈希值 和 短地址 做映射  db_shortlink:urlhash:长地址哈希值:url --> 短地址
 	err = r.Cli.Set(fmt.Sprintf(Db+UrlHashKey, urlHash), shortLink, time.Minute*time.Duration(exp)).Err()
 	if err != nil {
 		return "", nil
@@ -113,7 +113,7 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 		return "", err
 	}
 
-	// 映射 : 短地址 和 短地址详细信息 做映射
+	// 映射 : 短地址 和 长地址详细信息 做映射 db_shortlink:shortlink:短地址:detail --> 长地址详情
 	err = r.Cli.Set(fmt.Sprintf(Db+ShortLinkDetailKey, shortLink), detail, time.Minute*time.Duration(exp)).Err()
 	if err != nil {
 		return "", err
@@ -124,7 +124,7 @@ func (r *RedisCli) Shorten(url string, exp int64) (string, error) {
 
 // 传入短地址 返回短地址对应的详细信息
 func (r *RedisCli) ShortLinkInfo(shortLink string) (interface{}, error) {
-	// 从redis缓存获取 短地址 对应详细信息
+	// 从redis缓存获取 短地址 对应详细信息 db_shortlink:shortlink:短地址:detail --> 长地址详情
 	detail, err := r.Cli.Get(fmt.Sprintf(Db+ShortLinkDetailKey, shortLink)).Result()
 	if err == redis.Nil {
 		return "", NewNotFindErr(errors.New("unknown short url"))
@@ -137,6 +137,7 @@ func (r *RedisCli) ShortLinkInfo(shortLink string) (interface{}, error) {
 
 // 长地址 <-- 短地址
 func (r *RedisCli) UnShorten(shortLink string) (string, error) {
+	// db_shortlink:shortlink:短地址:url --> 长地址
 	url, err := r.Cli.Get(fmt.Sprintf(Db+ShortLinkKey, shortLink)).Result()
 	if err == redis.Nil {
 		return "", NewNotFindErr(errors.New("unknown short url"))

@@ -8,5 +8,6 @@ require (
 	github.com/justinas/alice v0.0.0-20171023064455-03f45bd4b7da
 	github.com/mattheath/base62 v0.0.0-20150408093626-b80cdc656a7a
 	github.com/speps/go-hashids v2.0.0+incompatible
+	github.com/stretchr/testify v1.4.0
 	gopkg.in/validator.v2 v2.0.0-20180514200540-135c24b11c19
 )
